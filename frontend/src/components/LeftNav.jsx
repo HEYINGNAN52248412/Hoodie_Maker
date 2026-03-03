@@ -4,6 +4,7 @@ export default function LeftNav({
   projects,
   activeView,
   onNavigateHome,
+  onNavigateKnowledgeBase,
   onSelectProject,
   onCreateProject,
   issueCount,
@@ -24,10 +25,15 @@ export default function LeftNav({
         <Home size={22} />
       </button>
 
-      {/* Knowledge Base placeholder */}
+      {/* Knowledge Base */}
       <button
+        onClick={onNavigateKnowledgeBase}
         title="Knowledge Base"
-        className="w-11 h-11 flex items-center justify-center rounded-xl text-cream/50 hover:text-cream hover:bg-white/10 transition-all"
+        className={`w-11 h-11 flex items-center justify-center rounded-xl transition-all ${
+          activeView === "knowledge-base"
+            ? "bg-white/15 text-cream shadow-sm shadow-white/5"
+            : "text-cream/50 hover:text-cream hover:bg-white/10"
+        }`}
       >
         <BookOpen size={22} />
       </button>

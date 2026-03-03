@@ -4,6 +4,7 @@ import { CheckCircle, AlertTriangle } from "lucide-react";
 import LeftNav from "./components/LeftNav";
 import Dashboard from "./components/Dashboard";
 import ProjectCanvas from "./components/ProjectCanvas";
+import KnowledgeBase from "./components/KnowledgeBase";
 import KnowledgeModal from "./components/KnowledgeModal";
 import TechPackModal from "./components/TechPackModal";
 import IssueDrawer from "./components/IssueDrawer";
@@ -77,6 +78,10 @@ export default function App() {
     setActiveView("home");
   }, []);
 
+  const handleNavigateKnowledgeBase = useCallback(() => {
+    setActiveView("knowledge-base");
+  }, []);
+
   const handleSelectProject = useCallback((projectId) => {
     setActiveView(projectId);
   }, []);
@@ -99,10 +104,10 @@ export default function App() {
 
   /* ── Render ───────────────────────────────────── */
 
-  const activeProject =
-    activeView !== "home"
-      ? projects.find((p) => p.id === activeView)
-      : null;
+  const isSpecialView = activeView === "home" || activeView === "knowledge-base";
+  const activeProject = !isSpecialView
+    ? projects.find((p) => p.id === activeView)
+    : null;
 
   return (
     <div className="flex min-h-screen">
@@ -111,6 +116,7 @@ export default function App() {
         projects={projects}
         activeView={activeView}
         onNavigateHome={handleNavigateHome}
+        onNavigateKnowledgeBase={handleNavigateKnowledgeBase}
         onSelectProject={handleSelectProject}
         onCreateProject={handleCreateProject}
         issueCount={issues.length}
@@ -118,7 +124,9 @@ export default function App() {
       />
 
       {/* Main content */}
-      {activeView === "home" || !activeProject ? (
+      {activeView === "knowledge-base" ? (
+        <KnowledgeBase />
+      ) : activeView === "home" || !activeProject ? (
         <Dashboard
           projects={projects}
           onCreateProject={handleCreateProject}

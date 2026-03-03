@@ -6,6 +6,7 @@ Thumbs.db
 .vite/
 .cache/
 .claude/
+PLAN.md
 
 # --- Dependencies ---
 node_modules/
