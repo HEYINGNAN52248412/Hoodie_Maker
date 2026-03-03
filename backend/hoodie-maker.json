@@ -1,0 +1,109 @@
+{
+  "name": "hoodie-maker",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "a6365615-b5ca-4808-8008-089744e4902f",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -16,
+        0
+      ],
+      "id": "6f602e84-1375-4aa3-a149-82c721ea626f",
+      "name": "Webhook",
+      "webhookId": "a6365615-b5ca-4808-8008-089744e4902f"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-haiku-4-5-20251001",
+          "mode": "list",
+          "cachedResultName": "claude-haiku-4-5-20251001"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Act as a Master Apparel Pattern Maker and Factory Production Manager with 20 years of experience. \nI will provide you with a JSON object representing a client's custom hoodie specifications.\nYour task is to generate a highly professional, unambiguous \"Manufacturing Tech Pack\" based on this JSON.\n\nRequirements:\n1. Output strictly in clean, structured Markdown format.\n2. Include the following sections:\n   - Order Summary (Quantity, Target Date)\n   - Material & Fabric Specifications\n   - Fit & Silhouette Details\n   - Construction & Hardware (Pockets, Hood strings, etc.)\n   - Crucial Manufacturing Notes\n3. Use standard apparel industry terminology.\n4. Provide clear instructions to the factory floor to prevent any misunderstandings. (For example, if a \"hidden pocket\" is selected, explicitly instruct them to use thin lining to prevent seam bulk at the waist).\n\nHere is the client's specification JSON:\n{{ JSON.stringify($('Webhook').item.json.body) }}"
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": 4096
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "2cb14048-60b2-4cd5-8fa9-a4b18253984c",
+      "name": "Message a model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "2Irf5oFZIYCUe21J",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{\n  {\n    \"status\": \"success\",\n    \"markdown_result\": $json.content[0].text\n  }\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        592,
+        0
+      ],
+      "id": "4abba0a1-f082-4bf3-a671-f7ba8e2114c0",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "542469af-4e7b-4401-809c-9571d9110e16",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8b5008eff3a48c4be9ebfbef194c64b70b79fbe9359d6953e26a1968288c4ccc"
+  },
+  "id": "GynhjOM3UAizsim3",
+  "tags": []
+}

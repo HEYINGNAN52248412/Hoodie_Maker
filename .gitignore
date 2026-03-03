@@ -1,0 +1,29 @@
+# --- System Files ---
+.DS_Store
+Thumbs.db
+
+# --- Development Caches ---
+.vite/
+.cache/
+.claude/
+
+# --- Dependencies ---
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# --- Environment Variables (CRITICAL) ---
+.env
+.env.*
+!.env.example
+
+# --- n8n Specific (if any local logs) ---
+.n8n/
+backup/
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
