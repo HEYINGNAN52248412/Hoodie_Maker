@@ -8,7 +8,7 @@ export default function ProjectHeader({ project, onRename }) {
 
   return (
     <header className="sticky top-0 z-10 bg-cream/80 backdrop-blur border-b border-node-border">
-      <div className="max-w-3xl mx-auto px-6 py-3 flex items-center justify-between">
+      <div className="px-6 py-3 flex items-center justify-between">
         <div>
           <EditableProjectName name={project.name} onRename={onRename} />
           <p className="text-xs text-ink-muted">Created {formattedDate}</p>

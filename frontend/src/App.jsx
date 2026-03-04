@@ -1,23 +1,47 @@
 import { useState, useCallback, useEffect } from "react";
-import { CheckCircle, AlertTriangle } from "lucide-react";
+import { CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 
+import { useAuth } from "./contexts/AuthContext";
+import Auth from "./components/Auth";
 import LeftNav from "./components/LeftNav";
 import Dashboard from "./components/Dashboard";
 import ProjectCanvas from "./components/ProjectCanvas";
 import KnowledgeBase from "./components/KnowledgeBase";
-import KnowledgeModal from "./components/KnowledgeModal";
+import KBDetailModal from "./components/KBDetailModal";
 import TechPackModal from "./components/TechPackModal";
 import IssueDrawer from "./components/IssueDrawer";
+import useLocalStorage from "./hooks/useLocalStorage";
 
 export default function App() {
-  // View routing: 'home' or a project id
-  const [activeView, setActiveView] = useState("home");
+  const { session, loading, signOut } = useAuth();
 
-  // All projects
-  const [projects, setProjects] = useState([]);
+  // Auth loading screen
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center">
+        <Loader2 size={28} className="animate-spin text-ink-muted" />
+      </div>
+    );
+  }
+
+  // Not authenticated — show login
+  if (!session) {
+    return <Auth />;
+  }
+
+  // Authenticated — render workspace
+  return <Workspace signOut={signOut} />;
+}
+
+function Workspace({ signOut }) {
+  // View routing: 'home' or a project id — persisted
+  const [activeView, setActiveView] = useLocalStorage("hoodie-maker-active-view", "home");
+
+  // All projects — persisted
+  const [projects, setProjects] = useLocalStorage("hoodie-maker-projects", []);
 
   // Knowledge modal state
-  const [knowledgeTitle, setKnowledgeTitle] = useState(null);
+  const [selectedKBItem, setSelectedKBItem] = useState(null);
 
   // Tech Pack modal state
   const [techPackMarkdown, setTechPackMarkdown] = useState(null);
@@ -88,8 +112,8 @@ export default function App() {
 
   /* ── Modal helpers ─────────────────────────────── */
 
-  const handleOpenKnowledge = useCallback((title) => {
-    setKnowledgeTitle(title);
+  const handleOpenKBDetail = useCallback((item) => {
+    setSelectedKBItem(item);
   }, []);
 
   const handleTechPackGenerated = useCallback((markdown, generatedAt) => {
@@ -121,6 +145,7 @@ export default function App() {
         onCreateProject={handleCreateProject}
         issueCount={issues.length}
         onOpenIssues={() => setIssueDrawerOpen(true)}
+        onSignOut={signOut}
       />
 
       {/* Main content */}
@@ -137,7 +162,7 @@ export default function App() {
           key={activeProject.id}
           project={activeProject}
           onUpdateProject={handleUpdateProject}
-          onOpenKnowledge={handleOpenKnowledge}
+          onOpenKBDetail={handleOpenKBDetail}
           onTechPackGenerated={handleTechPackGenerated}
           onViewTechPack={handleViewTechPack}
           isSending={isSending}
@@ -148,10 +173,10 @@ export default function App() {
       )}
 
       {/* Modals */}
-      {knowledgeTitle && (
-        <KnowledgeModal
-          title={knowledgeTitle}
-          onClose={() => setKnowledgeTitle(null)}
+      {selectedKBItem && (
+        <KBDetailModal
+          item={selectedKBItem}
+          onClose={() => setSelectedKBItem(null)}
         />
       )}
       {techPackMarkdown && (

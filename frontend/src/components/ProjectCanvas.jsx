@@ -20,7 +20,7 @@ function buildDefaults(def) {
 export default function ProjectCanvas({
   project,
   onUpdateProject,
-  onOpenKnowledge,
+  onOpenKBDetail,
   onTechPackGenerated,
   onViewTechPack,
   isSending,
@@ -182,11 +182,11 @@ export default function ProjectCanvas({
       />
 
       {/* Canvas */}
-      <main className="flex-1 draft-paper overflow-y-auto">
+      <main className="flex-1 draft-paper overflow-x-auto overflow-y-auto">
         <ProjectHeader project={project} onRename={handleRename} />
 
-        {/* Flow area */}
-        <div className="max-w-3xl mx-auto px-6 py-10 flex flex-col items-center">
+        {/* Flow area — horizontal */}
+        <div className="flex items-start gap-0 px-6 py-10 min-w-max">
           <StartNode />
 
           {installedIds.map((nodeId) => {
@@ -194,14 +194,14 @@ export default function ProjectCanvas({
             if (!def) return null;
 
             return (
-              <div key={nodeId} className="flex flex-col items-center w-full">
+              <div key={nodeId} className="flex items-start shrink-0">
                 <Connector />
                 <NodeCard
                   definition={def}
                   values={nodeValues[nodeId] || {}}
                   onChange={handleFieldChange}
                   onRemove={handleRemoveNode}
-                  onOpenKnowledge={onOpenKnowledge}
+                  onOpenKBDetail={onOpenKBDetail}
                 />
               </div>
             );
@@ -209,16 +209,16 @@ export default function ProjectCanvas({
 
           {/* Empty-state prompt */}
           {installedIds.length === 0 && (
-            <div className="mt-10 text-center">
-              <p className="text-sm text-ink-muted">
+            <div className="ml-10">
+              <p className="text-sm text-ink-muted whitespace-nowrap">
                 Select a node from the right sidebar to start building.
               </p>
             </div>
           )}
-
-          {/* Spacer above generate button */}
-          <div className="h-24" />
         </div>
+
+        {/* Spacer above generate button */}
+        <div className="h-24" />
 
         {/* Floating generate button — offset for LeftNav(w-20) + HistorySidebar(w-72) */}
         {installedIds.length > 0 && (

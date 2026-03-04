@@ -38,11 +38,17 @@ body {
   background-size: 24px 24px;
 }
 
-/* Connector line between nodes */
+/* Connector line between nodes (vertical — legacy) */
 .connector-line {
   width: 2px;
   background-color: var(--color-connector);
   margin: 0 auto;
+}
+
+/* Connector line between nodes (horizontal) */
+.connector-line-h {
+  height: 2px;
+  background-color: var(--color-connector);
 }
 
 /* Toast slide-up animation */

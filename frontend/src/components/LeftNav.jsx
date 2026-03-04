@@ -1,4 +1,4 @@
-import { Home, BookOpen, Plus, AlertCircle } from "lucide-react";
+import { Home, BookOpen, Plus, AlertCircle, LogOut } from "lucide-react";
 
 export default function LeftNav({
   projects,
@@ -9,6 +9,7 @@ export default function LeftNav({
   onCreateProject,
   issueCount,
   onOpenIssues,
+  onSignOut,
 }) {
   return (
     <aside className="w-20 shrink-0 h-screen sticky top-0 bg-ink flex flex-col items-center pt-5 pb-4 gap-1.5">
@@ -90,6 +91,15 @@ export default function LeftNav({
             {issueCount > 99 ? "99+" : issueCount}
           </span>
         )}
+      </button>
+
+      {/* Sign out */}
+      <button
+        onClick={onSignOut}
+        title="Sign out"
+        className="w-11 h-11 flex items-center justify-center rounded-xl text-cream/40 hover:text-cream hover:bg-white/10 transition-all"
+      >
+        <LogOut size={18} />
       </button>
     </aside>
   );

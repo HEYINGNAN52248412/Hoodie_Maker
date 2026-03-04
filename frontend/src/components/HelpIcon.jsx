@@ -1,7 +1,7 @@
 import { HelpCircle } from "lucide-react";
 import { useState, useRef } from "react";
 
-export default function HelpIcon({ tooltip, knowledgeTitle, onOpenKnowledge }) {
+export default function HelpIcon({ tooltip }) {
   const [showTooltip, setShowTooltip] = useState(false);
   const timeoutRef = useRef(null);
 
@@ -14,25 +14,16 @@ export default function HelpIcon({ tooltip, knowledgeTitle, onOpenKnowledge }) {
     setShowTooltip(false);
   };
 
-  const handleClick = (e) => {
-    e.stopPropagation();
-    clearTimeout(timeoutRef.current);
-    setShowTooltip(false);
-    onOpenKnowledge(knowledgeTitle);
-  };
-
   return (
     <span className="relative inline-flex items-center ml-1.5">
-      <button
-        type="button"
+      <span
         className="text-ink-muted hover:text-accent transition-colors p-0.5 rounded-full hover:bg-cream-dark"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        onClick={handleClick}
-        aria-label={`Help: ${knowledgeTitle}`}
+        aria-label={`Help: ${tooltip}`}
       >
         <HelpCircle size={14} />
-      </button>
+      </span>
 
       {showTooltip && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-40 pointer-events-none">
