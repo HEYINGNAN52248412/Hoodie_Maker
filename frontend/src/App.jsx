@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 
 import { useAuth } from "./contexts/AuthContext";
+import { supabase } from "./lib/supabase";
 import Auth from "./components/Auth";
 import LeftNav from "./components/LeftNav";
 import Dashboard from "./components/Dashboard";
@@ -10,7 +11,7 @@ import KnowledgeBase from "./components/KnowledgeBase";
 import KBDetailModal from "./components/KBDetailModal";
 import TechPackModal from "./components/TechPackModal";
 import IssueDrawer from "./components/IssueDrawer";
-import useLocalStorage from "./hooks/useLocalStorage";
+import useProjects from "./hooks/useProjects";
 
 export default function App() {
   const { session, loading, signOut } = useAuth();
@@ -34,11 +35,16 @@ export default function App() {
 }
 
 function Workspace({ signOut }) {
-  // View routing: 'home' or a project id — persisted
-  const [activeView, setActiveView] = useLocalStorage("hoodie-maker-active-view", "home");
+  const { user } = useAuth();
 
-  // All projects — persisted
-  const [projects, setProjects] = useLocalStorage("hoodie-maker-projects", []);
+  // View routing
+  const [activeView, setActiveView] = useState("home");
+
+  // All projects — Supabase-backed
+  const {
+    projects, loading: projectsLoading, fetchError,
+    createProject, updateProject, saveStatus,
+  } = useProjects(user?.id);
 
   // Knowledge modal state
   const [selectedKBItem, setSelectedKBItem] = useState(null);
@@ -46,6 +52,9 @@ function Workspace({ signOut }) {
   // Tech Pack modal state
   const [techPackMarkdown, setTechPackMarkdown] = useState(null);
   const [techPackGeneratedAt, setTechPackGeneratedAt] = useState(null);
+  const [isNewGeneration, setIsNewGeneration] = useState(false);
+  const [currentHistoryEntryId, setCurrentHistoryEntryId] = useState(null);
+  const [pdfUploadStatus, setPdfUploadStatus] = useState(null);
 
   // Issue tracker
   const [issues, setIssues] = useState([]);
@@ -62,6 +71,17 @@ function Workspace({ signOut }) {
     return () => clearTimeout(timer);
   }, [toast]);
 
+  // Show fetch error as toast
+  useEffect(() => {
+    if (fetchError) setToast({ type: "error", message: `Failed to load projects: ${fetchError}` });
+  }, [fetchError]);
+
+  // Clean up old localStorage keys (one-time migration)
+  useEffect(() => {
+    localStorage.removeItem("hoodie-maker-projects");
+    localStorage.removeItem("hoodie-maker-active-view");
+  }, []);
+
   /* ── Issue tracker ─────────────────────────────── */
 
   const addIssue = useCallback((issue) => {
@@ -77,24 +97,19 @@ function Workspace({ signOut }) {
 
   /* ── Project CRUD ──────────────────────────────── */
 
-  const handleCreateProject = useCallback(() => {
-    const newProject = {
-      id: crypto.randomUUID(),
-      name: `Untitled Project ${projects.length + 1}`,
-      createdAt: new Date().toISOString(),
-      installedIds: [],
-      nodeValues: {},
-      techPackHistory: [],
-    };
-    setProjects((prev) => [newProject, ...prev]);
-    setActiveView(newProject.id);
-  }, [projects.length]);
+  const handleCreateProject = useCallback(async () => {
+    try {
+      const id = await createProject();
+      setActiveView(id);
+    } catch {
+      setToast({ type: "error", message: "Failed to create project." });
+    }
+  }, [createProject]);
 
-  const handleUpdateProject = useCallback((projectId, partial) => {
-    setProjects((prev) =>
-      prev.map((p) => (p.id === projectId ? { ...p, ...partial } : p))
-    );
-  }, []);
+  const handleUpdateProject = useCallback(
+    (projectId, partial) => updateProject(projectId, partial),
+    [updateProject]
+  );
 
   /* ── Navigation ────────────────────────────────── */
 
@@ -116,22 +131,67 @@ function Workspace({ signOut }) {
     setSelectedKBItem(item);
   }, []);
 
-  const handleTechPackGenerated = useCallback((markdown, generatedAt) => {
+  const handleTechPackGenerated = useCallback((markdown, generatedAt, historyEntryId) => {
     setTechPackMarkdown(markdown);
     setTechPackGeneratedAt(generatedAt);
+    setIsNewGeneration(true);
+    setCurrentHistoryEntryId(historyEntryId);
+    setPdfUploadStatus(null);
   }, []);
 
   const handleViewTechPack = useCallback((markdown, generatedAt) => {
     setTechPackMarkdown(markdown);
     setTechPackGeneratedAt(generatedAt);
+    setIsNewGeneration(false);
+    setCurrentHistoryEntryId(null);
+    setPdfUploadStatus(null);
   }, []);
 
-  /* ── Render ───────────────────────────────────── */
-
+  // Derived — needed by handlePdfBlob below and render
   const isSpecialView = activeView === "home" || activeView === "knowledge-base";
   const activeProject = !isSpecialView
     ? projects.find((p) => p.id === activeView)
     : null;
+
+  const handlePdfBlob = useCallback(async (blob) => {
+    if (!activeProject || !currentHistoryEntryId) return;
+
+    setPdfUploadStatus("uploading");
+    try {
+      const filePath = `${user.id}/${activeProject.id}/techpack_${Date.now()}.pdf`;
+      const { error: uploadError } = await supabase.storage
+        .from("tech_packs")
+        .upload(filePath, blob, { contentType: "application/pdf" });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("tech_packs")
+        .getPublicUrl(filePath);
+
+      // Patch the history entry with pdfUrl
+      const updatedHistory = activeProject.techPackHistory.map((entry) =>
+        entry.id === currentHistoryEntryId
+          ? { ...entry, pdfUrl: publicUrl }
+          : entry
+      );
+      await handleUpdateProject(activeProject.id, { techPackHistory: updatedHistory });
+
+      setPdfUploadStatus("done");
+      setToast({ type: "success", message: "Tech pack PDF saved to cloud." });
+    } catch (err) {
+      console.error("PDF upload failed:", err);
+      setPdfUploadStatus("error");
+      setToast({ type: "error", message: `PDF upload failed: ${err.message}` });
+    } finally {
+      // Ensure we never leave the UI stuck — reset to null after a delay if still "uploading"
+      setTimeout(() => {
+        setPdfUploadStatus((prev) => (prev === "uploading" ? "error" : prev));
+      }, 30000);
+    }
+  }, [activeProject, currentHistoryEntryId, user, handleUpdateProject]);
+
+  /* ── Render ───────────────────────────────────── */
 
   return (
     <div className="flex min-h-screen">
@@ -149,7 +209,11 @@ function Workspace({ signOut }) {
       />
 
       {/* Main content */}
-      {activeView === "knowledge-base" ? (
+      {projectsLoading ? (
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 size={28} className="animate-spin text-ink-muted" />
+        </main>
+      ) : activeView === "knowledge-base" ? (
         <KnowledgeBase />
       ) : activeView === "home" || !activeProject ? (
         <Dashboard
@@ -169,6 +233,7 @@ function Workspace({ signOut }) {
           setIsSending={setIsSending}
           setToast={setToast}
           addIssue={addIssue}
+          saveStatus={saveStatus}
         />
       )}
 
@@ -183,9 +248,14 @@ function Workspace({ signOut }) {
         <TechPackModal
           markdown={techPackMarkdown}
           generatedAt={techPackGeneratedAt}
+          onPdfBlob={isNewGeneration ? handlePdfBlob : undefined}
+          pdfUploadStatus={pdfUploadStatus}
           onClose={() => {
             setTechPackMarkdown(null);
             setTechPackGeneratedAt(null);
+            setIsNewGeneration(false);
+            setCurrentHistoryEntryId(null);
+            setPdfUploadStatus(null);
           }}
         />
       )}

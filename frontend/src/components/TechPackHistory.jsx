@@ -56,12 +56,25 @@ export default function TechPackHistory({ history, onView }) {
                         {formatted} · {time}
                       </p>
                     </div>
-                    <button
-                      onClick={() => onView(entry)}
-                      className="shrink-0 opacity-0 group-hover:opacity-100 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-ink text-cream hover:bg-ink-light transition-all"
-                    >
-                      View
-                    </button>
+                    <div className="shrink-0 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
+                      <button
+                        onClick={() => onView(entry)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-ink text-cream hover:bg-ink-light transition-colors"
+                      >
+                        View
+                      </button>
+                      {entry.pdfUrl && (
+                        <a
+                          href={entry.pdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border border-ink text-ink hover:bg-zinc-100 transition-colors"
+                        >
+                          <Download size={11} />
+                          PDF
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

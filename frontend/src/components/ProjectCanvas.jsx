@@ -27,6 +27,7 @@ export default function ProjectCanvas({
   setIsSending,
   setToast,
   addIssue,
+  saveStatus,
 }) {
   const { id: projectId, installedIds, nodeValues, techPackHistory } = project;
 
@@ -107,9 +108,10 @@ export default function ProjectCanvas({
     setToast(null);
 
     try {
-      const response = await fetch(
-        "http://localhost:5678/webhook/a6365615-b5ca-4808-8008-089744e4902f",
-        {
+      const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL;
+      if (!webhookUrl) throw new Error("VITE_N8N_WEBHOOK_URL is not configured");
+
+      const response = await fetch(webhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(techPack),
@@ -134,7 +136,7 @@ export default function ProjectCanvas({
       });
 
       // Open the modal
-      onTechPackGenerated(markdown, generatedAt);
+      onTechPackGenerated(markdown, generatedAt, historyEntry.id);
     } catch (err) {
       const isNetwork = err instanceof TypeError && err.message === "Failed to fetch";
       const title = isNetwork
@@ -147,7 +149,7 @@ export default function ProjectCanvas({
       addIssue({
         title,
         detailedMessage,
-        technicalStack: `${err.name}: ${err.message}\n\nEndpoint: POST http://localhost:5678/webhook/a6365615-b5ca-4808-8008-089744e4902f\nTimestamp: ${new Date().toISOString()}${err.stack ? `\n\nStack:\n${err.stack}` : ""}`,
+        technicalStack: `${err.name}: ${err.message}\n\nEndpoint: POST ${import.meta.env.VITE_N8N_WEBHOOK_URL ?? "(not set)"}\nTimestamp: ${new Date().toISOString()}${err.stack ? `\n\nStack:\n${err.stack}` : ""}`,
       });
 
       setToast({
@@ -183,7 +185,7 @@ export default function ProjectCanvas({
 
       {/* Canvas */}
       <main className="flex-1 draft-paper overflow-x-auto overflow-y-auto">
-        <ProjectHeader project={project} onRename={handleRename} />
+        <ProjectHeader project={project} onRename={handleRename} saveStatus={saveStatus} />
 
         {/* Flow area — horizontal */}
         <div className="flex items-start gap-0 px-6 py-10 min-w-max">
